@@ -7,16 +7,17 @@ pipeline {
                 git 'git@github.com:DevOpsF21/Auth-module.git'
             }
         }
+           stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t auth-module .'
+            }
+        }
         stage('Install Dependencies') {
             steps {
                 sh 'npm install'
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t auth-module .'
-            }
-        }
+     
         stage('Push Docker Image to Local Registry') {
             steps {
                 sh 'docker tag auth-module localhost:5000/auth-module' // Tagging the image for the local registry
