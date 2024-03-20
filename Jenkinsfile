@@ -1,53 +1,49 @@
 pipeline {
     agent any
-    
+
+    environment {
+        // Define variables for Docker image name and tag
+        DOCKER_IMAGE = 'auth-module'
+        DOCKER_TAG = 'latest'
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Clone repository') {
             steps {
-                git 'git@github.com:DevOpsF21/Auth-module.git'
+                // Cloning GitHub repository
+                git 'https://github.com/mrkhmath/Auth-module.git'
             }
         }
-           stage('Build Docker Image') {
+
+        stage('Build Docker image') {
             steps {
-                sh 'docker build -t auth-module .'
+                // Building Docker image from the Dockerfile in the cloned repo
+                script {
+                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}", '.')
+                }
             }
         }
-        stage('Install Dependencies') {
+
+        stage('Run Docker container') {
             steps {
-                sh 'npm install'
-            }
-        }
-     
-        stage('Push Docker Image to Local Registry') {
-            steps {
-                sh 'docker tag auth-module localhost:5000/auth-module' // Tagging the image for the local registry
-                sh 'docker push localhost:5000/auth-module' // Pushing the image to the local registry
-            }
-        }
-        stage('Run Docker Container') {
-            steps {
-                sh 'docker run -d --name auth-container -p 8080:8080 localhost:5000/auth-module' // Running the image from the local registry
-            }
-        }
-        stage('Wait for Application to Start') {
-            steps {
-                // Add code to wait for the application to start (e.g., polling a health endpoint)
-                sh 'sleep 30' // Example: Wait for 30 seconds
-            }
-        }
-        stage('Run Tests') {
-            steps {
-                // Run Postman tests using Newman
-                sh 'newman run <path_to_your_postman_collection>'
-            }
-        }
-        stage('Cleanup') {
-            steps {
-                // Cleanup: Stop and remove the Docker container
-                sh 'docker stop auth-container'
-                sh 'docker rm auth-container'
+                // Running the Docker container from the built image
+                script {
+                    docker.run("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                }
             }
         }
     }
-}
 
+    post {
+        always {
+            echo 'Cleaning up...'
+            // Add steps to clean up after pipeline execution if necessary
+        }
+        success {
+            echo 'Pipeline executed successfully.'
+        }
+        failure {
+            echo 'Pipeline execution failed.'
+        }
+    }
+}
